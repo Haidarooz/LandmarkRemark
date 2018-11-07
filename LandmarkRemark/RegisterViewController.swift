@@ -37,7 +37,7 @@ class RegisterViewController: UIViewController {
         guard let email = emailText.text else {return}
         guard let password = passwordText.text else {return}
         
-        if !(usernameText.text?.isEmpty)! {
+        if !(usernameText.text?.isEmpty)! && (usernameText.text!.count < 13) {
 
         //create user with the credentials
         Auth.auth().createUser(withEmail: email, password: password) { user,error in
@@ -70,7 +70,7 @@ class RegisterViewController: UIViewController {
     }
         else {
             
-            self.errorLabel.text = "Enter a username"
+            self.errorLabel.text = "Enter a username that is less than 12 Characters"
         }
     }
     
