@@ -282,6 +282,13 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
                   //add annotation to map
                   map.addAnnotation(annotation)
         
+                  let latDelta: CLLocationDegrees = 0.004
+                  let lonDelta: CLLocationDegrees = 0.004
+                  let span : MKCoordinateSpan = MKCoordinateSpan(latitudeDelta: latDelta, longitudeDelta: lonDelta)
+                  let region: MKCoordinateRegion = MKCoordinateRegion(center: location, span: span)
+        
+                  //setting the map view to the added note's location
+                  self.map.setRegion(region, animated: true)
     }
     
     func loadExistingAnnotations(){
