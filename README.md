@@ -33,3 +33,18 @@ Time on each functionality:
 - Search functionality : 1.5 Hour
 - UI design and buttons : 30 Mins
 
+Known issue:
+
+- Deleting note by a user will note immediatly be removed from all the users, because the .ChildRemoved API call is not being called for some reasion
+
+
+Resources
+https://firebase.google.com/docs/ios/setup
+https://stackoverflow.com/questions/38274115/ios-swift-mapkit-custom-annotation
+https://stackoverflow.com/questions/30793315/customize-mkannotation-callout-view
+http://sweettutos.com/2016/03/16/how-to-completely-customise-your-map-annotations-callout-views/
+https://stackoverflow.com/questions/31446458/how-to-change-height-of-search-bar-swift
+https://www.youtube.com/watch?v=zgP_VHhkroE
+https://www.youtube.com/watch?v=UPKCULKi0-A
+https://stackoverflow.com/questions/45291215/how-to-handle-internet-connection-status-firebase
+https://stackoverflow.com/questions/32365654/how-do-i-compare-two-dictionaries-in-swift
