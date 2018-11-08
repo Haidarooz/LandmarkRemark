@@ -38,7 +38,8 @@ Known issue:
 - Deleting note by a user will note immediatly be removed from all the users, because the .ChildRemoved API call is not being called for some reasion
 
 
-Resources
+Resources:
+
 https://firebase.google.com/docs/ios/setup
 https://stackoverflow.com/questions/38274115/ios-swift-mapkit-custom-annotation
 https://stackoverflow.com/questions/30793315/customize-mkannotation-callout-view
