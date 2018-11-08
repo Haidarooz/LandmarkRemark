@@ -44,14 +44,16 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
         setupLocationManager()
         setUpUIelements()
         setupSearchBar()
-        
     }
     
     override func viewDidAppear(_ animated: Bool) {
         
+        //check if connected to firebase database
+        checkFirebaseConnection()
         //whenever the view appears load the existing notes to the map and expect new notes to be coming
         loadExistingAnnotations()
         observeNewLocationNotes()
+        
     }
     
     @IBAction func cancelButtonClicked(_ sender: Any) {
@@ -443,6 +445,36 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
         //refresh table data
         table.reloadData()
     }
+    
+    //checking firebase connection function
+    private func isConnected(completionHandler : @escaping (Bool) -> ()) {
+        let connectedRef = Database.database().reference(withPath: ".info/connected")
+        connectedRef.observe(.value, with: { snapshot in
+            completionHandler((snapshot.value as? Bool)!)
+        })
+    }
+    
+    private func checkFirebaseConnection(){
+        isConnected { connected in
+            if(connected){
+                //nothing to be done
+            } else {
+                self.showAlert(title: "No Internet Connection", message: "Please connect to the internet to read and post notes.")
+            }
+        }
+    }
+    
+    //creating an alert-posting-function
+    func showAlert (title: String, message : String) {
+        
+        //create alert
+        let alert =  UIAlertController(title: title, message: message, preferredStyle: .alert)
+        //add action to alert
+        alert.addAction(UIAlertAction(title: "Got it", style: .default, handler: nil))
+        //present alert
+        self.present(alert,animated: true, completion : nil)
+    }
+    
 }
 
 //an extention to CLLocationCoordinate to add the equality checker function

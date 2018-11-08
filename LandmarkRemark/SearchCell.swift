@@ -13,9 +13,10 @@ class SearchCell: UITableViewCell {
     //get IBOutlets
     @IBOutlet var title: UILabel!
     @IBOutlet var discription: UILabel!
-    
+
     //a location variable to determine which note it is when clicked in the search
     var location : CLLocationCoordinate2D!
+    
     
     override func awakeFromNib() {
         super.awakeFromNib()
