@@ -22,7 +22,7 @@ An outline of the capabilities of the app:
 4. Deleting notes of the logged in user
 
 
-![alt text](https://imgur.com/a/gTo1Et7)
+https://imgur.com/a/gTo1Et7
 
 
 Time on each functionality:
