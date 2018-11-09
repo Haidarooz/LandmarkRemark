@@ -22,7 +22,7 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
     @IBOutlet var addNoteView: UIView!
     @IBOutlet var addNoteText: UITextView!
     @IBOutlet var table: UITableView!
-
+    var currentUsername = ""
     let locationManager = CLLocationManager()
     
     var isSearching = false
@@ -48,11 +48,14 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
     
     override func viewDidAppear(_ animated: Bool) {
         
+        //save current username name
+        getCurrentUsername()
         //check if connected to firebase database
-        checkFirebaseConnection()
+        //checkFirebaseConnection()
         //whenever the view appears load the existing notes to the map and expect new notes to be coming
         loadExistingAnnotations()
         observeNewLocationNotes()
+        checkForDeletedNotes()
         
     }
     
@@ -88,6 +91,16 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
         //save location note to the database
         saveLocationNote(note: note)
         //remove the new note view and hide the keyboard
+        
+            let location = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+            let latDelta: CLLocationDegrees = 0.004
+            let lonDelta: CLLocationDegrees = 0.004
+            let span : MKCoordinateSpan = MKCoordinateSpan(latitudeDelta: latDelta, longitudeDelta: lonDelta)
+            let region: MKCoordinateRegion = MKCoordinateRegion(center: location, span: span)
+            
+            //setting the map view to the added note's location
+            self.map.setRegion(region, animated: true)
+            
         addNoteView.isHidden = true
         addNoteText.resignFirstResponder()
         }
@@ -225,20 +238,48 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
         
         //create a dictionary to save the location note from the argument to the db
         let userData = [
-            
             "longitude" : note.longitude,
             "latitude" : note.altitude,
             "text" : note.text
-            
         ] as [String : Any]
         
         //save.
         reference.setValue(userData)
     }
-   
-    func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
-        //print("Annotation selected")
+    
+    func removeLocationNote (note: LocationNote){
+        
+        //grab current user uid
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+       
+        //create a dictionary to compare the location note to be deleted to what is in the database
+        let noteToBeDeleted = [
+            "longitude" : note.longitude,
+            "latitude" : note.altitude,
+            "text" : note.text
+            ] as [String : AnyObject]
+        
+        //set reference to db
+        let reference = Database.database().reference().child("users/\(uid)/notes")
+        //get all values of the selected user's notes
+        reference.observe(.value) {snapshot in
+            
+            for notesData in snapshot.children.allObjects as! [DataSnapshot] {
+                //get the notes as dictionaries
+                let locationNote = notesData.value as? [String : AnyObject]
+                //compare the notes using the created generic function
+                if locationNote! == noteToBeDeleted {
+                    print("Deleted Note")
+                    notesData.ref.setValue(nil)
+                }
+                
+            }
+        }
+        
     }
+   
+//    func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
+//    }
     
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
         
@@ -252,7 +293,6 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
             let annotationView = MKPinAnnotationView(annotation: annotation, reuseIdentifier: identifier)
         
             annotationView.canShowCallout = true
-        
             //adding a text view to the annotation view to display user note text
             let aTextView = UITextView(frame: CGRect(x: 0, y: 0, width: 200, height: 30))
             //adding values to text view from the annotation
@@ -261,6 +301,20 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
             aTextView.textColor = UIColor.darkGray
             aTextView.isEditable = false
             annotationView.detailCalloutAccessoryView = aTextView;
+            annotationView.pinTintColor = UIColor.darkGray
+
+            //Current username annotation view  gets a special color & delete capability
+                if (currentUsername == annotation.title) {
+                    annotationView.pinTintColor = UIColor.red
+                    
+                    let deleteView = UIView(frame: CGRect(x: 0, y: 0, width: 20, height: 20))
+                    let button = UIButton(frame: CGRect.init(x: 0, y: 0, width: 20, height: 20))
+                    button.setImage(UIImage(named: "X"), for: .normal)
+                    deleteView.addSubview(button)
+                    button.addTarget(self, action: #selector(deleteButtonPressed), for: .touchUpInside)
+                    annotationView.rightCalloutAccessoryView = deleteView
+
+                }
         
             //adding constraints to the textview
             let width = NSLayoutConstraint(item: aTextView, attribute: NSLayoutConstraint.Attribute.width, relatedBy: NSLayoutConstraint.Relation.equal, toItem: nil, attribute: NSLayoutConstraint.Attribute.notAnAttribute, multiplier: 1, constant: 200)
@@ -269,6 +323,23 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
             aTextView.addConstraint(height)
 
         return annotationView
+    }
+    
+    @objc func deleteButtonPressed(sender: UIButton!) {
+
+        //delete the annotation
+
+        let selectedAnn = map.selectedAnnotations.first!
+        let text = selectedAnn.subtitle as! String
+        let latitude = selectedAnn.coordinate.latitude
+        let longitude = selectedAnn.coordinate.longitude
+        
+        let locationNote = LocationNote(altitude: latitude, longitude: longitude, text: text)
+        
+        //map.removeAnnotation(selectedAnn)
+        removeLocationNote(note: locationNote)
+        
+
     }
     
     func addNoteToMap(lat: CLLocationDegrees, long: CLLocationDegrees,title: String,text: String) {
@@ -284,13 +355,7 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
                   //add annotation to map
                   map.addAnnotation(annotation)
         
-                  let latDelta: CLLocationDegrees = 0.004
-                  let lonDelta: CLLocationDegrees = 0.004
-                  let span : MKCoordinateSpan = MKCoordinateSpan(latitudeDelta: latDelta, longitudeDelta: lonDelta)
-                  let region: MKCoordinateRegion = MKCoordinateRegion(center: location, span: span)
         
-                  //setting the map view to the added note's location
-                  self.map.setRegion(region, animated: true)
     }
     
     func loadExistingAnnotations(){
@@ -306,6 +371,7 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
                 //if the child's key is 'notes' then go deeper and loop through it to get the values
                 if userData.key == "notes" {
                    //loop through the notes
+                    
                     for notesData in userData.children.allObjects as! [DataSnapshot] {
                         //grab the values from the note as dictionary values
                         let locationNote = notesData.value as? [String : AnyObject]
@@ -313,15 +379,66 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
                         let latitude = locationNote?["latitude"] as! CLLocationDegrees
                         let text = locationNote?["text"] as! String
                         //create a user to be saved to the notes array
-                        let user : NSDictionary = ["username" : username, "latitude" : latitude, "longitude" : longitude, "text" : text ]
+                        let user : NSDictionary = ["username" : username, "latitude" : latitude, "longitude" : longitude, "text" : text]
                         self.notesArray.append(user)
                         //add the found note to the map
                         self.addNoteToMap(lat: latitude, long: longitude, title: username, text: text)
                         print("Added an existing annotation")
                     }
+                   
                 }
             }
         }
+    }
+    
+    func checkForDeletedNotes(){
+        //grab a reference
+        let reference = Database.database().reference().child("users/")
+        //observe the deleted note and get it
+        reference.observe(.childChanged){snapshot in
+            
+            
+            for userData in snapshot.children.allObjects as! [DataSnapshot] {
+                //save the username because its saved at this level of the hierarchy
+                userData.ref.observe(.childRemoved) {snapshot in
+                    print("removing child")
+                    let locationNote = snapshot.value as? [String : AnyObject]
+                    guard let longitude = locationNote?["longitude"] as? CLLocationDegrees else {return}
+                    guard let latitude = locationNote?["latitude"] as? CLLocationDegrees else {return}
+
+                    let location = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+
+                    let index = self.map.annotations.index { annotation in
+                        return (annotation.coordinate.isEqual(to: location))
+                    }
+                    
+                    
+                    //remove annotation at the found index (where it matches the deleted' notes location
+
+                    let annotation = self.map.annotations[index!]
+                    self.map.removeAnnotation(annotation)
+
+                    //remove all dictionary elements where the location (a unique variable) matches the location of the deleted note
+                    self.notesArray.removeAll{ dictionary in
+                       
+                       var condition = false
+                       let lat =  dictionary?["latitude"] as! CLLocationDegrees
+                       let long =  dictionary?["longitude"] as! CLLocationDegrees
+                       let loc = CLLocationCoordinate2D(latitude: lat, longitude: long)
+                       
+                        if loc.isEqual(to: location){
+                            condition = true
+                        }
+                        
+                        return condition
+                    }
+                }
+                
+            }
+        }
+
+       
+      
     }
     
     func observeNewLocationNotes(){
@@ -329,12 +446,13 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
         //database reference
         let reference = Database.database().reference().child("users/")
         //observe the reference for any child change, and we expect each logged in user to add new notes so this gets called
-        reference.observe(.childChanged, with: { (snapshot : DataSnapshot) in
+        reference.observe(.childChanged){snapshot in
             
             for userData in snapshot.children.allObjects as! [DataSnapshot] {
                 //save the username because its saved at this level of the hierarchy
                 let username = (snapshot.value as? NSDictionary)?["username"] as? String ?? ""
                 //if the child's key is 'notes' then go there
+                
                 if userData.key == "notes" {
                    
                     //get the last added item
@@ -346,6 +464,7 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
                     let text = locationNote?["text"] as! String
                     //create a user to be saved to the notes array
                     let user : NSDictionary = ["username" : username, "latitude" : latitude, "longitude" : longitude, "text" : text ]
+
                     self.notesArray.append(user)
                     //add the found note to the map
                     self.addNoteToMap(lat: latitude, long: longitude, title: username, text: text)
@@ -354,9 +473,8 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
                 }
             }
 
-        } )
+        }
         
-
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -446,6 +564,21 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
         table.reloadData()
     }
     
+    func getCurrentUsername(){
+        
+        //grab current user uid
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        //set reference to db
+        let reference = Database.database().reference().child("users/\(uid)")
+        
+        reference.observe(.value) { snapshot in
+            
+            let username = (snapshot.value as? NSDictionary)?["username"] as? String ?? ""
+            self.currentUsername = username
+        }
+        
+        
+    }
     //checking firebase connection function
     private func isConnected(completionHandler : @escaping (Bool) -> ()) {
         let connectedRef = Database.database().reference(withPath: ".info/connected")
@@ -456,9 +589,7 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
     
     private func checkFirebaseConnection(){
         isConnected { connected in
-            if(connected){
-                //nothing to be done
-            } else {
+            if(!connected){
                 self.showAlert(title: "No Internet Connection", message: "Please connect to the internet to read and post notes.")
             }
         }
@@ -466,7 +597,6 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
     
     //creating an alert-posting-function
     func showAlert (title: String, message : String) {
-        
         //create alert
         let alert =  UIAlertController(title: title, message: message, preferredStyle: .alert)
         //add action to alert
@@ -490,4 +620,10 @@ extension CLLocationCoordinate2D {
         return true
     }
     
+}
+
+//compraing dictionaries generic function
+func == <K, V>(left: [K:V?], right: [K:V?]) -> Bool {
+    guard let left = left as? [K: V], let right = right as? [K: V] else { return false }
+    return NSDictionary(dictionary: left).isEqual(to: right)
 }
