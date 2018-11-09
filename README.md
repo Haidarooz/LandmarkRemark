@@ -20,7 +20,7 @@ An outline of the capabilities of the app:
 3. Viewing notes of all users at the designated location
 3. Searching for notes by the usernames or the text of the note
 4. Deleting notes of the logged in user
-
+5. Everything is real time from note addition to searching to deletion.
 
 https://imgur.com/a/gTo1Et7
 
@@ -34,11 +34,7 @@ Time on each functionality:
 - Retrieving data from fire-base and updating the map : 2.5 Hours
 - Search functionality : 1.5 Hour
 - UI design and buttons : 30 Mins
-
-Known issue:
-
-- Deleting note by a user will note immediatly be removed from all the users, because the .ChildRemoved API call is not being called for some reasion
-- Deleting does not work sometimes because .ChildRemoved isnt called everytime
+- Deleting notes in real time : 2 Hours
 
 
 Resources:
