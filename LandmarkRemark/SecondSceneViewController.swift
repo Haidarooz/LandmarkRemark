@@ -405,33 +405,36 @@ class SecondSceneViewController: UIViewController,CLLocationManagerDelegate,MKMa
                     let locationNote = snapshot.value as? [String : AnyObject]
                     guard let longitude = locationNote?["longitude"] as? CLLocationDegrees else {return}
                     guard let latitude = locationNote?["latitude"] as? CLLocationDegrees else {return}
+                    guard let text = locationNote?["text"] as? String else {return}
 
                     let location = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
 
                     let index = self.map.annotations.index { annotation in
-                        return (annotation.coordinate.isEqual(to: location))
+                        return (annotation.coordinate.isEqual(to: location) && annotation.subtitle == text)
                     }
                     
-                    
-                    //remove annotation at the found index (where it matches the deleted' notes location
-
-                    let annotation = self.map.annotations[index!]
-                    self.map.removeAnnotation(annotation)
-
-                    //remove all dictionary elements where the location (a unique variable) matches the location of the deleted note
-                    self.notesArray.removeAll{ dictionary in
-                       
-                       var condition = false
-                       let lat =  dictionary?["latitude"] as! CLLocationDegrees
-                       let long =  dictionary?["longitude"] as! CLLocationDegrees
-                       let loc = CLLocationCoordinate2D(latitude: lat, longitude: long)
-                       
-                        if loc.isEqual(to: location){
-                            condition = true
-                        }
+                    if index != nil {
                         
-                        return condition
+                        //remove annotation at the found index (where it matches the deleted' notes location
+                        let annotation = self.map.annotations[index!]
+                        self.map.removeAnnotation(annotation)
+                        
+                        //remove all dictionary elements where the location (a unique variable) matches the location of the deleted note
+                        self.notesArray.removeAll{ dictionary in
+                            var condition = false
+                            let lat =  dictionary?["latitude"] as! CLLocationDegrees
+                            let long =  dictionary?["longitude"] as! CLLocationDegrees
+                            let loc = CLLocationCoordinate2D(latitude: lat, longitude: long)
+                            
+                            if loc.isEqual(to: location){
+                                condition = true
+                            }
+                            
+                            return condition
+                        }
                     }
+
+                    
                 }
                 
             }
