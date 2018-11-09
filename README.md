@@ -38,6 +38,7 @@ Time on each functionality:
 Known issue:
 
 - Deleting note by a user will note immediatly be removed from all the users, because the .ChildRemoved API call is not being called for some reasion
+- Deleting does not work sometimes because .ChildRemoved isnt called everytime
 
 
 Resources:
